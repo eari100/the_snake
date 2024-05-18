@@ -23,31 +23,40 @@ const Board: React.FC<BoardProps> = ({ width, height }) => {
     const initialSnakePosition: SnakePosition[] = [{ y: Math.floor(height / 2), x: Math.floor(width / 2) }]
     const [snake, setSnake] = useState<SnakePosition[]>(initialSnakePosition)
     const [snakeDirection, setSnakeDirection] = useState<SnakeDirection>(SnakeDirection.DOWN)
+    const [snakeSpeed, setSnakeSpeed] = useState(250)
 
     const moveSnake = () => {
         setSnake(prevSnake => {
             const { y, x } = prevSnake[0]
-            let newHead: SnakePosition
+            let newHeadY= y, newHeadX = x
 
             switch (snakeDirection) {
                 case SnakeDirection.UP:
-                    newHead = { y: y - 1, x }
+                    newHeadY = y - 1
                     break
                 case SnakeDirection.DOWN:
-                    newHead = { y: y + 1, x }
+                    newHeadY = y + 1
                     break
                 case SnakeDirection.LEFT:
-                    newHead = { y, x: x - 1 }
+                    newHeadX = x - 1
                     break
                 case SnakeDirection.RIGHT:
-                    newHead = { y, x: x + 1 }
+                    newHeadX = x + 1
                     break
-                default:
-                    newHead = { y, x }
             }
 
-            const newSnake = [newHead, ...prevSnake.slice(0, -1)]
-            return newSnake
+            if(newHeadY === 0) {
+                newHeadY = height
+            } else if(newHeadY === height) {
+                newHeadY = 0
+            } else if(newHeadX === 0) {
+                newHeadX = width
+            } else if(newHeadX === width) {
+                newHeadX = 0
+            }
+
+            const newHead: SnakePosition = {y: newHeadY, x: newHeadX}
+            return [newHead, ...prevSnake.slice(0, -1)]
         })
     }
 
@@ -71,9 +80,9 @@ const Board: React.FC<BoardProps> = ({ width, height }) => {
     }
 
     useEffect(() => {
-        const intervalId = setInterval(moveSnake, 1000)
+        const intervalId = setInterval(moveSnake, snakeSpeed)
         return () => clearInterval(intervalId)
-    }, [snakeDirection])
+    }, [snakeDirection, snakeSpeed])
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown)
