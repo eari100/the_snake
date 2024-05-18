@@ -27,7 +27,7 @@ const Board: React.FC<BoardProps> = ({ width, height }) => {
     const moveSnake = () => {
         setSnake(prevSnake => {
             const { y, x } = prevSnake[0]
-            let newHead: { y: number, x: number }
+            let newHead: SnakePosition
 
             switch (snakeDirection) {
                 case SnakeDirection.UP:
@@ -46,14 +46,39 @@ const Board: React.FC<BoardProps> = ({ width, height }) => {
                     newHead = { y, x }
             }
 
-            const newSnake = [newHead, ...snake.slice(0, -1)]
+            const newSnake = [newHead, ...prevSnake.slice(0, -1)]
             return newSnake
         })
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+        switch (event.key) {
+            case 'ArrowUp':
+                setSnakeDirection(SnakeDirection.UP)
+                break
+            case 'ArrowDown':
+                setSnakeDirection(SnakeDirection.DOWN)
+                break
+            case 'ArrowLeft':
+                setSnakeDirection(SnakeDirection.LEFT)
+                break
+            case 'ArrowRight':
+                setSnakeDirection(SnakeDirection.RIGHT)
+                break
+            default:
+                break
+        }
     }
 
     useEffect(() => {
         const intervalId = setInterval(moveSnake, 1000)
         return () => clearInterval(intervalId)
+    }, [snakeDirection])
+
+    useEffect(() => {
+        window.addEventListener('keydown', handleKeyDown)
+
+        return () => window.removeEventListener('keydown', handleKeyDown)
     }, [])
 
     const renderCells = () => {
@@ -78,15 +103,18 @@ const Board: React.FC<BoardProps> = ({ width, height }) => {
     }
 
     return (
-        <div
-            style={{
-                display: "grid",
-                gridTemplateColumns: `repeat(${width}, 20px)`, // 동적으로 width 적용
-                gridGap: "0"
-            }}
-        >
-            {renderCells()}
-        </div>
+        <>
+            {snakeDirection}
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: `repeat(${width}, 20px)`, // 동적으로 width 적용
+                    gridGap: "0"
+                }}
+            >
+                {renderCells()}
+            </div>
+        </>
     )
 }
 
