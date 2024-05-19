@@ -135,22 +135,20 @@ const Board: React.FC<BoardProps> = ({ width, height }) => {
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
-        switch (event.key) {
-            case 'ArrowUp':
-                setSnakeDirection(SnakeDirection.UP)
-                break
-            case 'ArrowDown':
-                setSnakeDirection(SnakeDirection.DOWN)
-                break
-            case 'ArrowLeft':
-                setSnakeDirection(SnakeDirection.LEFT)
-                break
-            case 'ArrowRight':
-                setSnakeDirection(SnakeDirection.RIGHT)
-                break
-            default:
-                break
-        }
+        setSnakeDirection(prevDirection => {
+            switch (event.key) {
+                case 'ArrowUp':
+                    return prevDirection !== SnakeDirection.DOWN ? SnakeDirection.UP : prevDirection
+                case 'ArrowDown':
+                    return prevDirection !== SnakeDirection.UP ? SnakeDirection.DOWN : prevDirection
+                case 'ArrowLeft':
+                    return prevDirection !== SnakeDirection.RIGHT ? SnakeDirection.LEFT : prevDirection
+                case 'ArrowRight':
+                    return prevDirection !== SnakeDirection.LEFT ? SnakeDirection.RIGHT : prevDirection
+                default:
+                    return prevDirection
+            }
+        })
     }
 
     useEffect(() => {
