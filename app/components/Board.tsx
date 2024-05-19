@@ -19,11 +19,25 @@ enum SnakeDirection {
     RIGHT = 'RIGHT'
 }
 
+enum ItemType {
+    SPEED_UP = 'SPEED_UP', // 빨강
+    SPEED_DOWN = 'SPEED_DOWN', // 파랑
+    SIZE_UP = 'SIZE_UP', // 노랑
+    SIZE_DOWN = 'SIZE_DOWN' // 갈색
+}
+
+interface ItemInfo {
+    itemType: ItemType,
+    y: number,
+    x: number
+}
+
 const Board: React.FC<BoardProps> = ({ width, height }) => {
     const initialSnakePosition: SnakePosition[] = [{ y: Math.floor(height / 2), x: Math.floor(width / 2) }]
     const [snake, setSnake] = useState<SnakePosition[]>(initialSnakePosition)
     const [snakeDirection, setSnakeDirection] = useState<SnakeDirection>(SnakeDirection.DOWN)
-    const [snakeSpeed, setSnakeSpeed] = useState(250)
+    const [snakeSpeed, setSnakeSpeed] = useState<number>(250)
+    const [itemInfoList, setItemInfoList] = useState<Array<ItemInfo>>([])
 
     const moveSnake = () => {
         setSnake(prevSnake => {
@@ -45,19 +59,79 @@ const Board: React.FC<BoardProps> = ({ width, height }) => {
                     break
             }
 
-            if(newHeadY === 0) {
+            if(newHeadY < 0) {
                 newHeadY = height
             } else if(newHeadY === height) {
                 newHeadY = 0
-            } else if(newHeadX === 0) {
+            } else if(newHeadX < 0) {
                 newHeadX = width
             } else if(newHeadX === width) {
                 newHeadX = 0
             }
 
             const newHead: SnakePosition = {y: newHeadY, x: newHeadX}
-            return [newHead, ...prevSnake.slice(0, -1)]
+
+            const itemIndex = itemInfoList.findIndex(item => item.y === newHeadY && item.x === newHeadX)
+            if (itemIndex !== -1) {
+                const item = itemInfoList[itemIndex]
+                setItemInfoList(prevItems => prevItems.filter((_, i) => i !== itemIndex))
+
+                switch (item.itemType) {
+                    case ItemType.SPEED_UP:
+                        setSnakeSpeed(prevSpeed => Math.max(50, prevSpeed - 50))
+                        return [newHead, ...prevSnake.slice(0, -1)]
+                        break
+                    case ItemType.SPEED_DOWN:
+                        setSnakeSpeed(prevSpeed => prevSpeed + 50)
+                        return [newHead, ...prevSnake.slice(0, -1)]
+                        break
+                    case ItemType.SIZE_UP:
+                        return [newHead, ...prevSnake]
+                        break
+                    case ItemType.SIZE_DOWN:
+                        return [newHead, ...prevSnake.slice(0, -2)]
+                        break
+                }
+            } else {
+                return [newHead, ...prevSnake.slice(0, -1)]
+            }
         })
+    }
+
+    const createItem = () => {
+        console.log('createItem ', createItem)
+        const getPosition = (max: number, exclusions: Set<number>): number => {
+            return Math.floor(Math.random() * max)
+            // while(true) {
+            //     const randomVal = Math.floor(Math.random() * max)
+            //
+            //     if( !exclusions.has(randomVal) ) {
+            //         return randomVal
+            //     }
+            // }
+        }
+
+        const snakeYValues = new Set<number>(), snakeXValues = new Set<number>()
+
+        snake.forEach(({y, x}) => {
+            snakeYValues.add(y)
+            snakeXValues.add(x)
+        })
+
+        const getRandomItemType = () => {
+            const itemTypes = Object.values(ItemType);
+            return itemTypes[Math.floor(Math.random() * itemTypes.length)];
+        }
+
+        const newItem: ItemInfo = {
+            itemType: getRandomItemType(),
+            y: getPosition(height, snakeYValues),
+            x: getPosition(width, snakeXValues)
+        }
+
+        console.log('newItem ', newItem)
+
+        setItemInfoList(prevItems => [...prevItems, newItem])
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -81,8 +155,14 @@ const Board: React.FC<BoardProps> = ({ width, height }) => {
 
     useEffect(() => {
         const intervalId = setInterval(moveSnake, snakeSpeed)
+
         return () => clearInterval(intervalId)
-    }, [snakeDirection, snakeSpeed])
+    }, [moveSnake])
+
+    useEffect(() => {
+        const intervalId = setInterval(createItem, 5000)
+        return () => clearInterval(intervalId)
+    }, [])
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown)
@@ -95,6 +175,35 @@ const Board: React.FC<BoardProps> = ({ width, height }) => {
         for (let row = 0; row < height; row++) {
             for (let col = 0; col < width; col++) {
                 const isSnakeCell = snake.some(({ y, x }) => y === row && x === col)
+                let backgroundColor = "transparent"
+
+                if( !isSnakeCell ) {
+                    const itemInfo: ItemInfo | undefined = itemInfoList.find(({ y, x }) => y === row && x === col)
+
+                    if(itemInfo) {
+                        const {itemType} = itemInfo
+
+                        if (isSnakeCell) {
+                            backgroundColor = "green"
+                        } else if (itemType) {
+                            switch (itemType) {
+                                case ItemType.SPEED_UP:
+                                    backgroundColor = "red"
+                                    break
+                                case ItemType.SPEED_DOWN:
+                                    backgroundColor = "blue"
+                                    break
+                                case ItemType.SIZE_UP:
+                                    backgroundColor = "yellow"
+                                    break
+                                case ItemType.SIZE_DOWN:
+                                    backgroundColor = "brown"
+                                    break
+                            }
+                        }
+                    }
+                }
+
                 cells.push(
                     <div
                         key={`${row}-${col}`}
@@ -102,7 +211,7 @@ const Board: React.FC<BoardProps> = ({ width, height }) => {
                             border: "1px solid #888",
                             width: "20px",
                             height: "20px",
-                            backgroundColor: isSnakeCell ? "green" : "transparent"
+                            backgroundColor: isSnakeCell ? "green" : backgroundColor
                         }}
                     />
                 )
